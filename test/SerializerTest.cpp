@@ -1,9 +1,18 @@
-//
 //Author: Ugo Varetto
 //
-//Distributed under GPL v3.0
-//see LICENSE file, part of this distribution
+// This file is part of zrf - zeromq remoting framework.
+//zrf is free software: you can redistribute it and/or modify
+//it under the terms of the GNU General Public License as published by
+//the Free Software Foundation, either version 3 of the License, or
+//(at your option) any later version.
 //
+//zrf is distributed in the hope that it will be useful,
+//but WITHOUT ANY WARRANTY; without even the implied warranty of
+//MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//GNU General Public License for more details.
+//
+//You should have received a copy of the GNU General Public License
+//along with zrf.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <cassert>
 #include <cstdlib>
@@ -12,12 +21,12 @@
 #include <iostream>
 #include <tuple>
 
-#if LOG__
+#ifdef LOG__
 #include <algorithm>
 #include <iterator>
 #endif
 
-#include "../Serialize.h"
+#include "Serialize.h"
 
 using namespace std;
 using namespace srz;
@@ -40,11 +49,6 @@ int main(int, char**) {
     const ByteArray voutBuf = VIntSerializer::Pack(vintOut);
     vector< int > vintIn;
     VIntSerializer::UnPack(begin(voutBuf), vintIn);
-#if LOG__
-    cout << endl;
-    copy(vintIn.begin(), vintIn.end(), ostream_iterator< int >(cout, " "));
-    cout << endl;
-#endif
     assert(vintIn.size() == vintOut.size());
     assert(vintIn == vintOut);
     //string
@@ -100,12 +104,19 @@ int main(int, char**) {
     assert(make_tuple(first, second, third) ==
            make_tuple(1, 2.0, 3.1f));
     assert(it == tv.cend());
-#if LOG__
-    cout << endl;
-    copy(vsin.begin(), vsin.end(), ostream_iterator< string >(cout, "\n"));
-    cout << endl;
-#endif
     assert(vsin == vsout);
+
+    //map
+    map< string, string > mapin = {
+        {"one", "one"},
+        {"two", "owt"},
+        {"three", "eerht"}
+    };
+    using MapSerializer = typename GetSerializer< decltype(mapin) >::Type;
+    ByteArray mba = MapSerializer::Pack(mapin);
+    map< string, string> mapout;
+    MapSerializer::UnPack(begin(mba), mapout);
+    assert(mapin == mapout);
     cout << "PASSED" << endl;
     return EXIT_SUCCESS;
 }
