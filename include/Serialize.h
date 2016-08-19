@@ -1,9 +1,19 @@
 #pragma once
 //Author: Ugo Varetto
 //
-//Distributed under GPL v3.0
-//See LICENSE file part of this distribution
+// This file is part of zrf - zeromq remoting framework.
+//zrf is free software: you can redistribute it and/or modify
+//it under the terms of the GNU General Public License as published by
+//the Free Software Foundation, either version 3 of the License, or
+//(at your option) any later version.
 //
+//zrf is distributed in the hope that it will be useful,
+//but WITHOUT ANY WARRANTY; without even the implied warranty of
+//MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//GNU General Public License for more details.
+//
+//You should have received a copy of the GNU General Public License
+//along with zrf.  If not, see <http://www.gnu.org/licenses/>.
 
 //! \file Serialize.h
 //! \brief Implementation of specializations for serializing any type to
@@ -30,6 +40,7 @@
 #include <vector>
 #include <string>
 #include <type_traits>
+#include <map>
 
 //! Serialization framework
 namespace srz {
@@ -159,6 +170,8 @@ struct SerializeVector {
     }
 };
 
+
+
 //! \c std::string serialization.
 struct SerializeString {
     using T = std::string::value_type;
@@ -177,6 +190,48 @@ struct SerializeString {
         return bi;
     }
 };
+
+//! Specialization for \c std::map
+template< typename K, typename T >
+struct SerializeMap {
+    using KS = typename GetSerializer< K >::Type;
+    using VS = typename GetSerializer< T >::Type;
+    using SS = SerializePOD< size_t >;
+    static ByteArray Pack(const std::map< K, T >& m,
+                          ByteArray buf = ByteArray()) {
+        buf = SS::Pack(m.size(), buf);
+        for(auto& mi: m) {
+            buf = KS::Pack(mi.first, buf);
+            buf = VS::Pack(mi.second, buf);
+        }
+        return buf;
+    }
+    static ByteIterator Pack(const std::map< K, T >& m, ByteIterator bi) {
+        bi = SS::Pack(m.size(), bi);
+        for(auto& mi: m) {
+            bi = KS::Pack(mi.first, bi);
+            bi = VS::Pack(mi.second, bi);
+        }
+        return bi;
+    }
+    static ConstByteIterator UnPack(ConstByteIterator bi,
+                                    std::map< K, T >& d) {
+
+        size_t size = 0;
+        bi = SS::UnPack(bi, size);
+        for(size_t i = 0; i != size; ++i) {
+            K key;
+            T value;
+            bi = KS::UnPack(bi, key);
+            bi = VS::UnPack(bi, value);
+            d.insert(std::make_pair(key, value));
+        }
+        return bi;
+    }
+};
+
+
+
 //! @}
 
 //! \defgroup \code [Serializer selection]
@@ -273,6 +328,12 @@ struct GetSerializer< volatile std::tuple< ArgsT... > > {
     typename std::conditional< detail::And< std::is_pod< ArgsT >... >::Value,
                                SerializePOD< std::tuple< ArgsT... > >,
                                Serialize< std::tuple< ArgsT... > > >::type;
+};
+
+
+template < typename K, typename T >
+struct GetSerializer< std::map< K, T > > {
+    using Type = SerializeMap< K, T >;
 };
 
 //! \defgroup raw pointer serialization
