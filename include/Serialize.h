@@ -42,8 +42,6 @@
 #include <type_traits>
 #include <map>
 
-//! Serialization framework
-namespace srz {
 #ifdef ZRF_uint8_t
 #include <cinttypes>
 using Byte = std::uint8_t;
@@ -51,6 +49,15 @@ using Byte = std::uint8_t;
 using Byte = char;
 static_assert(sizeof(char) == 1, "sizeof(char) != 1");
 #endif
+
+#ifdef ZRF_int32_size
+using Size = int32_t;
+#else
+using Size = size_t;
+#endif
+
+//! Serialization framework
+namespace srz {
 using ByteArray = std::vector< Byte >;
 using ByteIterator = ByteArray::iterator;
 using ConstByteIterator = ByteArray::const_iterator;
@@ -67,7 +74,7 @@ struct GetSerializer;
 template< typename T >
 struct SerializePOD {
     static ByteArray Pack(const T& d, ByteArray buf = ByteArray()) {
-        const size_t sz = buf.size();
+        const Size sz = Size(buf.size());
         buf.resize(buf.size() + sizeof(d));
         memmove(buf.data() + sz, &d, sizeof(d));
         return buf;
@@ -87,7 +94,7 @@ struct SerializePOD {
 template< typename T >
 struct Serialize {
     static ByteArray Pack(const T& d, ByteArray buf = ByteArray()) {
-        const size_t sz = buf.size();
+        const Size sz = Size(buf.size());
         buf.resize(buf.size() + sizeof(d));
         new(buf.data() + sz) T(d); //copy constructor
         return buf;
@@ -105,11 +112,11 @@ struct Serialize {
 //! Specialization for \c vector of POD types.
 template< typename T >
 struct SerializeVectorPOD {
-    using ST = typename std::vector< T >::size_type;
+    using ST = Size;//typename std::vector< T >::size_type;
     static ByteArray Pack(const std::vector< T >& d,
                           ByteArray buf = ByteArray()) {
-        const size_t sz = buf.size();
-        const ST s = d.size();
+        const Size sz = Size(buf.size());
+        const ST s = ST(d.size());
         buf.resize(buf.size() + sizeof(T) * d.size() + sizeof(ST));
         memmove(buf.data() + sz, &s, sizeof(s));
         memmove(buf.data() + sz + sizeof(s), d.data(), sizeof(T) * d.size());
@@ -133,14 +140,14 @@ struct SerializeVectorPOD {
 //! Specialization for \c vector of non-POD types.
 template< typename T >
 struct SerializeVector {
-    using ST = typename std::vector<
-        typename std::remove_cv< T >::type >::size_type;
+    using ST = Size;/*typename std::vector<
+        typename std::remove_cv< T >::type >::size_type;*/
     using TS = typename GetSerializer<
         typename std::remove_cv< T >::type >::Type;
     static ByteArray Pack(const std::vector< T >& d,
                           ByteArray buf = ByteArray()) {
-        const size_t sz = buf.size();
-        const size_t s = d.size();
+        const Size sz = Size(buf.size());
+        const Size s = Size(d.size());
         buf.resize(buf.size() + sizeof(s));
         memmove(buf.data() + sz, &s, sizeof(s));
         for (decltype(d.cbegin()) i = d.cbegin(); i != d.cend(); ++i) {
@@ -149,8 +156,8 @@ struct SerializeVector {
         return buf;
     }
     static ByteIterator Pack(const std::vector< T >& d, ByteIterator bi) {
-        const ST s = d.size();
-        memmove(bi, &s, sizeof(s));
+        const ST s = ST(d.size());
+        memmove(&*bi, &s, sizeof(s));
         for (decltype(cbegin(d)) i = cbegin(d); i != cend(d); ++i) {
             bi = TS::Pack(*i, bi);
         }
@@ -196,7 +203,7 @@ template< typename K, typename T >
 struct SerializeMap {
     using KS = typename GetSerializer< K >::Type;
     using VS = typename GetSerializer< T >::Type;
-    using SS = SerializePOD< size_t >;
+    using SS = SerializePOD< Size >;
     static ByteArray Pack(const std::map< K, T >& m,
                           ByteArray buf = ByteArray()) {
         buf = SS::Pack(m.size(), buf);
@@ -217,9 +224,9 @@ struct SerializeMap {
     static ConstByteIterator UnPack(ConstByteIterator bi,
                                     std::map< K, T >& d) {
 
-        size_t size = 0;
+        Size size = 0;
         bi = SS::UnPack(bi, size);
-        for(size_t i = 0; i != size; ++i) {
+        for(Size i = 0; i != size; ++i) {
             K key;
             T value;
             bi = KS::UnPack(bi, key);
