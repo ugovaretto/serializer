@@ -42,15 +42,15 @@
 #include <type_traits>
 #include <map>
 
-#ifdef ZRF_uint8_t
-#include <cinttypes>
-using Byte = std::uint8_t;
+#ifdef ZRF_UNSIGNED_CHAR
+using Byte = unsigned char;
 #else
 using Byte = char;
 static_assert(sizeof(char) == 1, "sizeof(char) != 1");
 #endif
 
 #ifdef ZRF_int32_size
+#include <csdtint>
 using Size = int32_t;
 #else
 using Size = size_t;
