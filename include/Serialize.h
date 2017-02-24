@@ -50,7 +50,7 @@ static_assert(sizeof(char) == 1, "sizeof(char) != 1");
 #endif
 
 #ifdef ZRF_int32_size
-#include <csdtint>
+#include <cstdint>
 using Size = int32_t;
 #else
 using Size = size_t;
