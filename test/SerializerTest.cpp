@@ -141,6 +141,7 @@ int main(int, char**) {
     VectorSerializer::UnPack(begin(wrappedCBuffer), ivout);
     delete [] cbuffer;
     assert(ivout == vector< int >({0, 1, 2, 3, 4}));
+
     cout << "PASSED" << endl;
     return EXIT_SUCCESS;
 }
