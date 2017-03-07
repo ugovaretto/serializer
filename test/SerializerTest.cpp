@@ -27,6 +27,7 @@
 #endif
 
 #include "Serialize.h"
+#include "BufferToVector.h"
 
 using namespace std;
 using namespace srz;
@@ -128,7 +129,18 @@ int main(int, char**) {
     MouseEvent me = UnPack< MouseEvent >(in);
     assert(memcmp(&me, &ref, sizeof(MouseEvent)) == 0); //no difference
 
+    //wrapped char buffer
+    const size_t S = 1 * sizeof(size_t) + 5 * sizeof(int);
+    char* cbuffer = new char[S];
+    *reinterpret_cast< size_t* >(&cbuffer[0]) = 5;
+    int* intBuffer = reinterpret_cast< int* >(&cbuffer[sizeof(size_t)]);
+    for(int i = 0; i != 5; ++i) intBuffer[i] = i;
+    auto wrappedCBuffer = BufferToVector(cbuffer, S);
+    using VectorSerializer = typename GetSerializer< vector< int > >::Type;
+    vector< int > ivout;
+    VectorSerializer::UnPack(begin(wrappedCBuffer), ivout);
+    delete [] cbuffer;
+    assert(ivout == vector< int >({0, 1, 2, 3, 4}));
     cout << "PASSED" << endl;
-
     return EXIT_SUCCESS;
 }
