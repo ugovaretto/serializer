@@ -142,6 +142,18 @@ int main(int, char**) {
     delete [] cbuffer;
     assert(ivout == vector< int >({0, 1, 2, 3, 4}));
 
+    //Pack, UnPack tuple
+    const int plen = 4;
+    const vector<int> p = {1,2,3,4};
+    ByteArray packet;
+    Pack(packet, p, plen);
+
+    const tuple< int, vector< int > > pvOut =
+            UnPackTuple< int, vector< int > >(packet);
+    assert(get<0>(pvOut) == plen);
+    assert((get<1>(pvOut) == vector< int >{1,2,3,4}));
+
     cout << "PASSED" << endl;
+
     return EXIT_SUCCESS;
 }

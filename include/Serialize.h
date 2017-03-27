@@ -80,7 +80,7 @@ struct SerializePOD {
         return buf;
     }
     static ByteIterator Pack(const T& d, ByteIterator i) {
-        memmove(i, &d, sizeof(d));
+        memmove(&*i, &d, sizeof(d));
         return i + sizeof(d);
     }
     static ConstByteIterator UnPack(ConstByteIterator i, T& d) {
@@ -358,13 +358,13 @@ struct GetSerializer< volatile T* >;
 
 //! \defgroup Packing/Unpacking
 //! Serialize data to byte array: void specialization.
-inline ByteArray Pack(ByteArray ba) {
+inline ByteArray Pack(ByteArray&& ba) {
     return ba;
 }
 
 //! Serialize data to byte array.
 template< typename T, typename... ArgsT >
-ByteArray Pack(ByteArray ba, const T& h, const ArgsT&... t) {
+ByteArray Pack(ByteArray&& ba, const T& h, const ArgsT&... t) {
     return Pack(GetSerializer< T >::Type::Pack(h, std::move(ba)), t...);
 };
 
@@ -382,8 +382,8 @@ inline ByteIterator Pack(ByteIterator bi) {
 
 //! Serialize data to byte array at position pointed by iterator
 template< typename T, typename... ArgsT >
-ByteIterator Pack(ByteIterator bi, const T& h, const ArgsT&... t) {
-    return Pack(GetSerializer< T >::Type::Pack(h, bi), t...);
+ByteIterator Pack(ByteIterator&& bi, const T& h, const ArgsT&... t) {
+    return Pack(GetSerializer< T >::Type::Pack(h, std::move(bi)), t...);
 };
 
 
@@ -398,7 +398,7 @@ size_t Pack(ByteArray& ba, const T& h, const ArgsT&... t) {
     const size_t sz = ba.size();
     ba.resize(sz + sizeof(T));
     GetSerializer< T >::Type::Pack(h, ba.begin() + sz);
-    return sizeof(T) + Pack(ba, t...);
+    return sizeof(T) + Pack((ByteArray&) ba, t...);
 };
 
 template< typename... ArgsT >
