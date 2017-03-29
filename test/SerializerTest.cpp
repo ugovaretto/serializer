@@ -33,7 +33,10 @@ using namespace std;
 using namespace srz;
 
 int main(int, char**) {
-    //POD
+
+//1. GetSerializer
+
+    //1.1 POD
     const int intOut = 3;
     using IntSerializer = GetSerializer< decltype(intOut) >::Type;
     static_assert(std::is_same< IntSerializer, SerializePOD< int > >::value,
@@ -42,7 +45,7 @@ int main(int, char**) {
     int intIn = -1;
     IntSerializer::UnPack(begin(ioutBuf), intIn);
     assert(intOut == intIn);
-    //POD vector
+    //1.2 POD vector
     const vector< int > vintOut = {1,2,3,4,5,4,3,2,1};
     using VIntSerializer = GetSerializer< decltype(vintOut) >::Type;
     static_assert(std::is_same< VIntSerializer, SerializeVectorPOD< int > >::value,
@@ -52,7 +55,7 @@ int main(int, char**) {
     VIntSerializer::UnPack(begin(voutBuf), vintIn);
     assert(vintIn.size() == vintOut.size());
     assert(vintIn == vintOut);
-    //string
+    //1.3 string
     const string outstring = "outstring";
     using StringSerializer = GetSerializer< decltype(outstring) >::Type;
     static_assert(std::is_same< StringSerializer, SerializeString >::value,
@@ -62,7 +65,7 @@ int main(int, char**) {
     StringSerializer::UnPack(begin(soutBuf), instring);
     assert(instring.size() == outstring.size());
     assert(instring == outstring);
-    //Non-POD tuple
+    //1.4 Non-POD tuple
     const tuple< int, double, string > outTuple = make_tuple(4, 4.0, "four");
     using TupleSerializer = GetSerializer< decltype(outTuple) >::Type;
     static_assert(std::is_same< TupleSerializer,
@@ -73,7 +76,7 @@ int main(int, char**) {
     tuple< int, double, string > inTuple;
     TupleSerializer::UnPack(begin(toutBuf), inTuple);
     assert(inTuple == outTuple);
-    //POD tuple
+    //1.5 POD tuple
     const tuple< int, double, float > poutTuple = make_tuple(4, 4.0, 4.0f);
     using PODTupleSerializer = GetSerializer< decltype(poutTuple) >::Type;
     static_assert(std::is_same< PODTupleSerializer,
@@ -84,7 +87,7 @@ int main(int, char**) {
     tuple< int, double, float > pinTuple;
     PODTupleSerializer::UnPack(begin(ptoutBuf), pinTuple);
     assert(pinTuple == poutTuple);
-    //Non-POD vector
+    //1.6 Non-POD vector
     const vector< string > vsout = {"1", "2", "three"};
     using VSSerializer = GetSerializer< vector< string > >::Type;
     static_assert(std::is_same< VSSerializer,
@@ -94,7 +97,7 @@ int main(int, char**) {
     vector< string > vsin;
     VSSerializer::UnPack(begin(vsoutBuf), vsin);
 
-    //Serialize individual elements and read to tuple
+    //1.7 Serialize individual elements and read to tuple
     ByteArray tv = Pack(1, 2.0, 3.1f);
     int first;
     double second;
@@ -107,7 +110,7 @@ int main(int, char**) {
     assert(it == tv.cend());
     assert(vsin == vsout);
 
-    //map
+    //1.8 map
     map< string, string > mapin = {
         {"one", "one"},
         {"two", "owt"},
@@ -119,7 +122,7 @@ int main(int, char**) {
     MapSerializer::UnPack(begin(mba), mapout);
     assert(mapin == mapout);
 
-    //struct with embedded C array
+    //1.9 struct with embedded C array
     struct MouseEvent {
         int x;
         int y;
@@ -129,7 +132,7 @@ int main(int, char**) {
     MouseEvent me = UnPack< MouseEvent >(in);
     assert(memcmp(&me, &ref, sizeof(MouseEvent)) == 0); //no difference
 
-    //wrapped char buffer
+    //1.10 wrapped char buffer
     const size_t S = 1 * sizeof(size_t) + 5 * sizeof(int);
     char* cbuffer = new char[S];
     *reinterpret_cast< size_t* >(&cbuffer[0]) = 5;
@@ -142,7 +145,9 @@ int main(int, char**) {
     delete [] cbuffer;
     assert(ivout == vector< int >({0, 1, 2, 3, 4}));
 
-    //Pack, UnPack tuple
+//2. Pack/UnPack
+
+    //2.1 Pack, UnPack tuple
     const int plen = 4;
     const vector<int> p = {1,2,3,4};
     ByteArray packet;
@@ -150,8 +155,18 @@ int main(int, char**) {
 
     const tuple< vector< int >, int > pvOut =
             UnPackTuple< vector< int >, int >(packet);
-    assert(get<1>(pvOut) == plen);
     assert((get<0>(pvOut) == vector< int >{1,2,3,4}));
+    assert(get<1>(pvOut) == plen);
+
+
+    //2.2 Pack/Unpack vector<pair<string,string>>
+    const vector< pair<string,string> > m = {{"1","2"},{"3","4"}};
+    ByteArray mpacket; // = Pack(m); // works too
+    Pack(mpacket, m);
+
+    vector< pair<string,string> > mOut;
+    UnPack(begin(mpacket), mOut);
+    assert(mOut == m);
 
     cout << "PASSED" << endl;
 

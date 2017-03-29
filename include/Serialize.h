@@ -87,8 +87,13 @@ struct SerializePOD {
         memmove(&d, &*i, sizeof(T));
         return i + sizeof(T);
     }
+    //size of serialized data
+    static size_t Sizeof(const T& d) { return sizeof(d); }
 };
 
+//! Fallback for standard copy constructible objects.
+//! @warning verify that indeed works with your custom type
+#ifndef SRZ_DISABLE_DEFAULT
 //! Serialize copy constructible objects.
 //! Placement \c new and copy constructors are used to copy data into buffer
 template< typename T >
@@ -100,13 +105,42 @@ struct Serialize {
         return buf;
     }
     static ByteIterator Pack(const T& d, ByteIterator i) {
-        new(i) T(d); //copy constructor
+        new(&*i) T(d); //copy constructor
         return i + sizeof(d);
     }
     static ConstByteIterator UnPack(ConstByteIterator i, T& d) {
         d = *reinterpret_cast< const T* >(&*i); //assignment operator
         return i + sizeof(T);
     }
+    //size of serialized data
+    static size_t Sizeof(const T& d) { return sizeof(d); }
+};
+#endif
+
+//! Specialization for pair
+template< typename F, typename S >
+struct SerializePair {
+    using P = std::pair< F, S >;
+    using FS = typename GetSerializer< F >::Type;
+    using SS = typename GetSerializer< S >::Type;
+    static ByteArray Pack(const P& p, ByteArray buf = ByteArray()) {
+        buf = FS::Pack(p.first, buf);
+        return SS::Pack(p.second, buf);
+    }
+    static ByteIterator Pack(const P& p, ByteIterator i) {
+        i = FS::Pack(p.first, i);
+        return SS::Pack(p.second, i);
+    }
+    static ConstByteIterator UnPack(ConstByteIterator i, P& d) {
+        F f;
+        S s;
+        i = FS::UnPack(i, f);
+        i = FS::UnPack(i, s);
+        d = std::make_pair(f, s);
+        return i;
+    }
+    //size of serialized data
+    static size_t Sizeof(const P& p) { return FS::Sizeof(p.first) + SS::Sizeof(p.second); }
 };
 
 //! Specialization for \c vector of POD types.
@@ -135,6 +169,12 @@ struct SerializeVectorPOD {
         memmove(d.data(), &*(i + sizeof(s)), s * sizeof(T));
         return i + sizeof(s) + sizeof(T) * s;
     }
+    //size of serialized data
+    static size_t Sizeof(const std::vector< T >& v) {
+        const size_t sz = sizeof(Size);
+        const size_t bs = sizeof(T) * v.size();
+        return  sz + bs;
+    }
 };
 
 //! Specialization for \c vector of non-POD types.
@@ -150,7 +190,7 @@ struct SerializeVector {
         const Size s = Size(d.size());
         buf.resize(buf.size() + sizeof(s));
         memmove(buf.data() + sz, &s, sizeof(s));
-        for (decltype(d.cbegin()) i = d.cbegin(); i != d.cend(); ++i) {
+        for(decltype(d.cbegin()) i = d.cbegin(); i != d.cend(); ++i) {
             buf = TS::Pack(*i, buf);
         }
         return buf;
@@ -158,9 +198,16 @@ struct SerializeVector {
     static ByteIterator Pack(const std::vector< T >& d, ByteIterator bi) {
         const ST s = ST(d.size());
         memmove(&*bi, &s, sizeof(s));
+        bi += sizeof(s);
+#if __cplusplus == 201402L
         for (decltype(cbegin(d)) i = cbegin(d); i != cend(d); ++i) {
             bi = TS::Pack(*i, bi);
         }
+#else
+        for (decltype(begin(d)) i = begin(d); i != end(d); ++i) {
+            bi = TS::Pack(*i, bi);
+        }
+#endif
         return bi;
     }
     static ConstByteIterator UnPack(ConstByteIterator bi, std::vector< T >& d) {
@@ -174,6 +221,13 @@ struct SerializeVector {
             d.push_back(std::move(data));
         }
         return bi;
+    }
+    //!size of serialized data
+    //! @warning O(n) operation
+    static size_t Sizeof(const std::vector< T >& v) {
+        size_t size = sizeof(Size);
+        for(auto& e: v) size += TS::Sizeof(e);
+        return size;
     }
 };
 
@@ -196,6 +250,8 @@ struct SerializeString {
         d = std::string(v.begin(), v.end());
         return bi;
     }
+    //size of serialized data
+    static size_t Sizeof(const std::string& v) { return sizeof(size_t) + v.size() * sizeof(T); }
 };
 
 //! Specialization for \c std::map
@@ -234,6 +290,16 @@ struct SerializeMap {
             d.insert(std::make_pair(key, value));
         }
         return bi;
+    }
+    //! Compute size of serialized data
+    //! @warning O(n) operation
+    static size_t Sizeof(const std::map< K, T >& m) {
+        size_t size = sizeof(size_t);
+        for(auto& mi: m) {
+            size += KS::Sizeof(mi.first);
+            size += VS::Sizeof(mi.second);
+        }
+        return size;
     }
 };
 
@@ -291,6 +357,21 @@ struct GetSerializer< const std::string > {
 template<>
 struct GetSerializer< volatile std::string > {
     using Type = SerializeString;
+};
+
+
+template <typename F, typename S>
+struct GetSerializer< std::pair< F, S > > {
+    using Type = SerializePair< F, S >;
+};
+
+template <typename F, typename S>
+struct GetSerializer< const std::pair< F, S > > {
+    using Type = SerializePair< F, S >;
+};
+template <typename F, typename S>
+struct GetSerializer< volatile std::pair< F, S > > {
+    using Type = SerializePair< F, S >;
 };
 
 namespace detail {
@@ -396,9 +477,10 @@ inline size_t Pack(ByteArray&) {
 template< typename T, typename... ArgsT >
 size_t Pack(ByteArray& ba, const T& h, const ArgsT&... t) {
     const size_t sz = ba.size();
-    ba.resize(sz + sizeof(T));
+    const size_t size = GetSerializer< T >::Type::Sizeof(h);
+    ba.resize(sz + size);
     GetSerializer< T >::Type::Pack(h, ba.begin() + sz);
-    return sizeof(T) + Pack((ByteArray&) ba, t...);
+    return size + Pack(ba, t...);
 };
 
 template< typename... ArgsT >
