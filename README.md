@@ -23,13 +23,13 @@ The interface for the serialization class is:
 template< typename T >
 struct MySerialize {
     //increase size of passed byte array, store data in it then return new copy
-    static ByteArray Pack(const T& d, ByteArray buf = ByteArray());
+    static srz::ByteArray Pack(const T& d, srz::ByteArray buf = srz::ByteArray());
     //store data into pre-allocated memory pointed to by byte iterator and
     //return iterator incremented to end address
-    static ByteIterator Pack(const T& d, ByteIterator i);
+    static srz::ByteIterator Pack(const T& d, srz::ByteIterator i);
     //read data from memory pointed to by iterator and return updated
     //iterator address
-    static ConstByteIterator UnPack(ConstByteIterator i, T& d);
+    static srz::ConstByteIterator UnPack(srz::ConstByteIterator i, T& d);
     //compute and return the size in bytes of the serialized data; e.g.
     //in case of a vector<int> V the compute size would be (assuming array size is serialized as size_t)
     //size = sizeof(size_t) + V.size() * sizeof(int) 
