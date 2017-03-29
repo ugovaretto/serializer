@@ -1,7 +1,7 @@
 # SRZ - SeRialiZation framework
 Small serialization framework to serialize data to byte array.
 
-Look at test driver for examples of usage.
+Look at test driver for usage example.
 
 Specializations for `POD, vector, string, map, pair` exist as welll as for types that can be 
 copy constructed with no memory allocation required.
@@ -9,13 +9,13 @@ copy constructed with no memory allocation required.
 By default the `Serializer<T>` implementation is invoked in case no other suitable
 implementation is found.
 
-In general you should always create a `GetSerializer<>` specialization for
-your own type.
+In general you should always create a `GetSerializer<T>` specialization for
+your own type `T`.
 
 Creating a proper `GetSerializer` implementation is a two step process:
 
 1.  Create a serialization class
-2.  Create a `GetSerializer` struct which selects the proper serialization struct when invoked as `GetSerializer< T >::Type`
+2.  Create a `GetSerializer` struct which selects the proper serialization struct when invoked as `GetSerializer<T>::Type`
 
 The interface for the serialization class is:
 
@@ -36,5 +36,39 @@ struct MySerialize {
     static size_t Sizeof(const T& d);
 };
 ```
+`ByteArray` can be specified to be a `char` or `unsigned char` `std::vector`.
+The serialized size type for `vector` and other elements requiring a length parameter can be set to be either `size_t` or `int32_t` for cases where data needs to be exchanged with languages (such as JavaScript or Java) lacking an 8 byte unsigned type.
+
+`#define` directive exist to select `ByteArray` and `Size` type; from the `Serializer.h`header:
+
+```c++
+#ifdef ZRF_UNSIGNED_CHAR
+using Byte = unsigned char;
+#else
+using Byte = char;
+static_assert(sizeof(char) == 1, "sizeof(char) != 1");
+#endif
+
+#ifdef ZRF_int32_size
+#include <cstdint>
+using Size = int32_t;
+#else
+using Size = size_t;
+#endif
+
+//! Serialization framework
+namespace srz {
+using ByteArray = std::vector< Byte >;
+using ByteIterator = ByteArray::iterator;
+using ConstByteIterator = ByteArray::const_iterator;
+```
+
+
+
+
+
+
+
+
 
 
