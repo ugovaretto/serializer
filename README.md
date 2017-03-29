@@ -15,25 +15,31 @@ your own type `T`.
 Creating a proper `GetSerializer` implementation is a two step process:
 
 1.  Create a serialization class
-2.  Create a `GetSerializer` struct which selects the proper serialization struct when invoked as `GetSerializer<T>::Type`
+2.  Create a `GetSerializer` class which selects the proper serialization class when invoked as `GetSerializer<T>::Type`
 
-The interface for the serialization class is:
+The interface for the serialization class for a `MyType` tupe is:
 
 ```c++
-template< typename T >
 struct MySerialize {
     //increase size of passed byte array, store data in it then return new copy
-    static srz::ByteArray Pack(const T& d, srz::ByteArray buf = srz::ByteArray());
+    static srz::ByteArray Pack(const MyType& d, srz::ByteArray buf = srz::ByteArray());
     //store data into pre-allocated memory pointed to by byte iterator and
     //return iterator incremented to end address
-    static srz::ByteIterator Pack(const T& d, srz::ByteIterator i);
+    static srz::ByteIterator Pack(const MyType& d, srz::ByteIterator i);
     //read data from memory pointed to by iterator and return updated
     //iterator address
-    static srz::ConstByteIterator UnPack(srz::ConstByteIterator i, T& d);
+    static srz::ConstByteIterator UnPack(srz::ConstByteIterator i, MyType& d);
     //compute and return the size in bytes of the serialized data; e.g.
     //in case of a vector<int> V the compute size would be (assuming array size is serialized as size_t)
     //size = sizeof(size_t) + V.size() * sizeof(int) 
-    static size_t Sizeof(const T& d);
+    static size_t Sizeof(const MyType& d);
+};
+```
+The `GetSerializer` specialization for `MyType` is then:
+```c++
+template <>
+struct GetSerializer< MyType > {
+    using Type = MySerialize;
 };
 ```
 `ByteArray` can be specified to be a `char` or `unsigned char` `std::vector`.
