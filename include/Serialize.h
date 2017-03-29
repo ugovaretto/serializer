@@ -139,7 +139,9 @@ struct SerializePair {
         return i;
     }
     //size of serialized data
-    static size_t Sizeof(const P& p) { return FS::Sizeof(p.first) + SS::Sizeof(p.second); }
+    static size_t Sizeof(const P& p) {
+        return FS::Sizeof(p.first) + SS::Sizeof(p.second);
+    }
 };
 
 //! Specialization for \c vector of POD types.
@@ -250,7 +252,9 @@ struct SerializeString {
         return bi;
     }
     //size of serialized data
-    static size_t Sizeof(const std::string& v) { return sizeof(size_t) + v.size() * sizeof(T); }
+    static size_t Sizeof(const std::string& v) {
+        return sizeof(size_t) + v.size() * sizeof(T);
+    }
 };
 
 //! Specialization for \c std::map

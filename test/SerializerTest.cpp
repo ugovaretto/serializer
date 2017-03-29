@@ -13,6 +13,8 @@
 //You should have received a copy of the GNU General Public License
 //along with srz.  If not, see <http://www.gnu.org/licenses/>.
 
+//#define SRZ_DISABLE_DEFAULT
+
 #include <cassert>
 #include <cstdlib>
 #include <string>
@@ -47,7 +49,8 @@ int main(int, char**) {
     //1.2 POD vector
     const vector< int > vintOut = {1,2,3,4,5,4,3,2,1};
     using VIntSerializer = GetSerializer< decltype(vintOut) >::Type;
-    static_assert(std::is_same< VIntSerializer, SerializeVectorPOD< int > >::value,
+    static_assert(std::is_same< VIntSerializer,
+                                SerializeVectorPOD< int > >::value,
                   "Not SerializeVectorPOD< int > type");
     const ByteArray voutBuf = VIntSerializer::Pack(vintOut);
     vector< int > vintIn;
