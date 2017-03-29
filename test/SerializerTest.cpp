@@ -148,10 +148,10 @@ int main(int, char**) {
     ByteArray packet;
     Pack(packet, p, plen);
 
-    const tuple< int, vector< int > > pvOut =
-            UnPackTuple< int, vector< int > >(packet);
-    assert(get<0>(pvOut) == plen);
-    assert((get<1>(pvOut) == vector< int >{1,2,3,4}));
+    const tuple< vector< int >, int > pvOut =
+            UnPackTuple< vector< int >, int >(packet);
+    assert(get<1>(pvOut) == plen);
+    assert((get<0>(pvOut) == vector< int >{1,2,3,4}));
 
     cout << "PASSED" << endl;
 
