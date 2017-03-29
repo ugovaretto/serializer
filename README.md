@@ -1,5 +1,5 @@
 # SRZ - SeRialiZation framework
-Small serialization framework to serialize data to byte array.
+Small serialization framework for serializing data to a byte array.
 
 Look at test driver for usage example.
 
@@ -44,7 +44,7 @@ struct GetSerializer< MyType > {
 ```
 `ByteArray` can be specified to be a `char` or `unsigned char` `std::vector`.
 
-The serialized size type for `vector` and other elements requiring a length parameter can be set to be either `size_t` or `int32_t` for cases where data needs to be exchanged with languages (such as ''JavaScript'' or ''Java'') lacking an 8 byte unsigned integer type.
+The serialized size type for `vector` and other elements requiring a length parameter can be set to be either `size_t` or `int32_t` for cases where data needs to be exchanged with languages (such as *JavaScript* or *Java*) lacking an 8 byte unsigned integer type.
 
 `#define` directives exist to select `ByteArray` and `Size` type; from the `Serializer.h`header:
 
