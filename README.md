@@ -17,7 +17,7 @@ Creating a proper `GetSerializer` implementation is a two step process:
 1.  Create a serialization class
 2.  Create a `GetSerializer` class which selects the proper serialization class when invoked as `GetSerializer<T>::Type`
 
-The interface for the serialization class for a `MyType` tupe is:
+The interface for the serialization class for a `MyType` type is:
 
 ```c++
 struct MySerialize {
@@ -69,6 +69,9 @@ using ByteIterator = ByteArray::iterator;
 using ConstByteIterator = ByteArray::const_iterator;
 ```
 
+`#define SRZ_DISABLE_DEFAULT` to disable automatic fallback to `Serializer<T>` for types `T` for which a specializaiton does not exist. This should be the default behavior, however by keeping it enabled it is possible to serialize `tuple`s of POD types.
+
+Serialization of pointers is not allowed.
 
 
 
