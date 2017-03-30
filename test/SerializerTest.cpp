@@ -161,12 +161,17 @@ int main(int, char**) {
     assert(get<1>(pvOut) == plen);
 
 
-    //2.2 Pack/Unpack vector<pair<string,string>>
+    //2.2 Pack/Unpack vector<pair>
     const vector< pair<string,int> > m = {{"1",2},{"3",4}};
-    ByteArray mpacket; // = Pack(m); // works too
+    ByteArray mpacket;
     Pack(mpacket, m);
 
     vector< pair<string,int> > mOut;
+    UnPack(begin(mpacket), mOut);
+    assert(mOut == m);
+
+    mpacket = Pack(m);
+    mOut.clear();
     UnPack(begin(mpacket), mOut);
     assert(mOut == m);
 
