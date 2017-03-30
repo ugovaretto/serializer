@@ -134,7 +134,7 @@ struct SerializePair {
         F f;
         S s;
         i = FS::UnPack(i, f);
-        i = FS::UnPack(i, s);
+        i = SS::UnPack(i, s);
         d = std::make_pair(f, s);
         return i;
     }

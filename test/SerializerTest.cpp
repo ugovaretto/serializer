@@ -162,11 +162,11 @@ int main(int, char**) {
 
 
     //2.2 Pack/Unpack vector<pair<string,string>>
-    const vector< pair<string,string> > m = {{"1","2"},{"3","4"}};
+    const vector< pair<string,int> > m = {{"1",2},{"3",4}};
     ByteArray mpacket; // = Pack(m); // works too
     Pack(mpacket, m);
 
-    vector< pair<string,string> > mOut;
+    vector< pair<string,int> > mOut;
     UnPack(begin(mpacket), mOut);
     assert(mOut == m);
 
