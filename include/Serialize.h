@@ -36,6 +36,7 @@
 //! \sa Pack, UnPack, UnPackTuple
 
 #pragma once
+#include <cstring>
 #include <vector>
 #include <string>
 #include <type_traits>
